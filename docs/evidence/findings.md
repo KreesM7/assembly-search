@@ -1,5 +1,7 @@
 # dnSpy search: evidence from the supplied ZIP
 
+Historical investigation recorded before implementation. The completed project and its verified limits are described in [README](../../README.md) and [verification](../verification.md).
+
 Inspected on 2026-10-20 using REA MCP. This report describes static observations from the supplied build, followed by a proposed independent Linux implementation. The Windows application was not executed.
 
 ## Artifact identity

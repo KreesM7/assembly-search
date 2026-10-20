@@ -4,7 +4,7 @@ Linux desktop and CLI search for .NET assembly metadata, IL literals, local symb
 
 ## Run the Linux package
 
-Extract `artifacts/assembly-search-linux-x64.tar.gz`, then run:
+Download the `assembly-search-linux-x64` artifact from a successful GitHub Actions Linux run, or build it with `scripts/publish-linux.sh`. Extract `assembly-search-linux-x64.tar.gz`, then run:
 
 ```bash
 ./desktop/assembly-search-desktop /path/to/MyApp.dll

@@ -49,7 +49,7 @@ Implemented on Linux x86_64. The Release build has no warnings/errors. Test comm
 | V04 | CLI schema, exit codes, spaces in paths and cancellation | verified | CLI process tests cover JSON, all 24 kinds, invalid arguments, spaces and exits 0/2/3; actual SIGINT against dnSpy search returned exit 130 and valid Cancelled JSON. |
 | V05 | Known-query smoke tests on supplied dnSpy build | verified | Supplied dnSpy.dll, query StartSearch, MethodDef: seven matches; SearchControlVM.StartSearch token 0x06001258, SHA/MVID matched retained evidence. |
 | V06 | Actual Linux desktop launch and interaction | partial | Native desktop launched with dnSpy.dll and remained running. Headless controls/search/selection/keyboard/rendering verified; native OS interactions unavailable through this session’s computer surface. |
-| V07 | Linux CI and self-contained linux-x64 publish smoke test | verified | Release build, locked restore, self-contained linux-x64 package and package-smoke.sh pass locally. GitHub CI execution pending repository delivery. |
+| V07 | Linux CI and self-contained linux-x64 publish smoke test | verified | Release build, locked restore, self-contained linux-x64 package and package-smoke.sh pass locally. GitHub Actions is configured and running on the private repository; see the delivery receipt for the final hosted run result. |
 | V08 | Final requirement review and Git remote SHA verification | partial | Independent review complete; all three reported defects fixed with failing/passing regression tests. Remote commit/tree verification is recorded in the delivery receipt; connector-created commit SHAs differ from local author/date objects. |
 
 ## Known compatibility boundaries

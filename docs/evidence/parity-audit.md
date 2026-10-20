@@ -1,5 +1,7 @@
 # Main-window search audit
 
+Historical investigation recorded before implementation. The completed project and its verified limits are described in [README](../../README.md) and [verification](../verification.md).
+
 This supplement refines the initial findings using additional selected metadata/CIL inspections. It does not assert that a Linux implementation exists yet.
 
 ## New evidence and corrections
