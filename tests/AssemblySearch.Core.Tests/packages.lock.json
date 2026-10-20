@@ -93,6 +93,15 @@
           "dnlib": "[4.5.0, )"
         }
       },
+      "referencefixture": {
+        "type": "Project"
+      },
+      "searchfixture": {
+        "type": "Project",
+        "dependencies": {
+          "ReferenceFixture": "[1.0.0, )"
+        }
+      },
       "dnlib": {
         "type": "CentralTransitive",
         "requested": "[4.5.0, )",

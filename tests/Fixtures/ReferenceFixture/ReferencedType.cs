@@ -1,0 +1,1 @@
+namespace OtherLibrary; public class ReferencedType {}
