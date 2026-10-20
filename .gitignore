@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+artifacts/
+.env
+.env.*
+*.user
+*.suo
+*.pem
+*.key
+.DS_Store
