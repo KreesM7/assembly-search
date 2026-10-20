@@ -338,19 +338,19 @@
           "xunit.v3.runner.common": "[3.2.2]"
         }
       },
-      "assemblysearch.core": {
-        "type": "Project",
-        "dependencies": {
-          "dnlib": "[4.5.0, )"
-        }
-      },
-      "assemblysearch.desktop": {
+      "assembly-search-desktop": {
         "type": "Project",
         "dependencies": {
           "AssemblySearch.Core": "[1.0.0, )",
           "Avalonia": "[12.1.4, )",
           "Avalonia.Desktop": "[12.1.4, )",
           "Avalonia.Themes.Fluent": "[12.1.4, )"
+        }
+      },
+      "assemblysearch.core": {
+        "type": "Project",
+        "dependencies": {
+          "dnlib": "[4.5.0, )"
         }
       },
       "referencefixture": {
