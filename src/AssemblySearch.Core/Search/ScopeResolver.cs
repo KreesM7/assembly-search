@@ -1,4 +1,5 @@
 using AssemblySearch.Core.Query;
+using System.Runtime.InteropServices;
 namespace AssemblySearch.Core.Search;
 
 public static class ScopeResolver
@@ -6,9 +7,25 @@ public static class ScopeResolver
     public static string CanonicalPath(string path)
     {
         var full = Path.GetFullPath(path);
+        // realpath resolves every component, including .. after a directory symlink.
+        if (OperatingSystem.IsLinux())
+        {
+            var resolved = RealPath(path, IntPtr.Zero);
+            if (resolved == IntPtr.Zero)
+                return full; // Preserve missing paths for per-file diagnostics.
+            try
+            {
+                return Marshal.PtrToStringUTF8(resolved) ?? full;
+            }
+            finally { Free(resolved); }
+        }
         var info = new FileInfo(full);
         return info.Exists && info.LinkTarget != null ? info.ResolveLinkTarget(true)?.FullName ?? full : full;
     }
+    [DllImport("libc", EntryPoint = "realpath", SetLastError = true)]
+    static extern IntPtr RealPath([MarshalAs(UnmanagedType.LPUTF8Str)] string path, IntPtr buffer);
+    [DllImport("libc", EntryPoint = "free")]
+    static extern void Free(IntPtr buffer);
     public static IReadOnlyList<string> Resolve(SearchRequest request)
     {
         var q = request.Query;

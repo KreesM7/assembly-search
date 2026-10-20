@@ -25,6 +25,8 @@ internal static class LiteralMatcher
         }
         if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var floating))
         {
+            if (double.IsInfinity(floating) && !new[] { "Infinity", "+Infinity", "-Infinity" }.Contains(text, StringComparer.OrdinalIgnoreCase))
+                throw new QueryValidationException("Floating-point literal is outside the supported range. Use Infinity explicitly.");
             return new((_, value, lit) => lit && FloatingEquals(floating, value));
         }
         if (Regex.IsMatch(text, @"^[+-]?\d", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100)))

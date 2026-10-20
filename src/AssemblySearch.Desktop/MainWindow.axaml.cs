@@ -32,9 +32,9 @@ public partial class MainWindow : Window
         Width = settings.Width;
         Height = settings.Height;
         C<ComboBox>("CategoryBox").ItemsSource = Enum.GetValues<SearchKind>();
-        C<ComboBox>("CategoryBox").SelectedItem = settings.Kind;
+        C<ComboBox>("CategoryBox").SelectedItem = settings.Mode == QueryMode.Literal ? SearchKind.Literal : settings.Kind;
         C<ComboBox>("ModeBox").ItemsSource = Enum.GetValues<QueryMode>();
-        C<ComboBox>("ModeBox").SelectedItem = settings.Mode;
+        C<ComboBox>("ModeBox").SelectedItem = settings.Kind == SearchKind.Literal ? QueryMode.Literal : settings.Mode;
         C<ComboBox>("ScopeBox").ItemsSource = Enum.GetValues<SearchScopeKind>();
         C<ComboBox>("ScopeBox").SelectedItem = settings.Scope;
         C<CheckBox>("CaseBox").IsChecked = settings.CaseSensitive;
@@ -52,7 +52,29 @@ public partial class MainWindow : Window
         C<TextBox>("QueryBox").TextChanged += async (_, _) => { C<Button>("ClearButton").IsVisible = !string.IsNullOrEmpty(C<TextBox>("QueryBox").Text); if (ready) await SearchAsync(); };
         C<TextBox>("TypeBox").TextChanged += async (_, _) => { if (ready) await SearchAsync(); };
         foreach (var name in new[] { "CategoryBox", "ModeBox", "ScopeBox" })
-            C<ComboBox>(name).SelectionChanged += async (_, _) => { if (!ready) return; C<StackPanel>("TypePanel").IsVisible = C<ComboBox>("ScopeBox").SelectedItem is SearchScopeKind.Type; if (name == "CategoryBox" && C<ComboBox>("CategoryBox").SelectedItem is SearchKind.Literal) C<ComboBox>("ModeBox").SelectedItem = QueryMode.Literal; await SearchAsync(); };
+            C<ComboBox>(name).SelectionChanged += async (_, _) =>
+            {
+                if (!ready)
+                    return;
+                C<StackPanel>("TypePanel").IsVisible = C<ComboBox>("ScopeBox").SelectedItem is SearchScopeKind.Type;
+                var category = C<ComboBox>("CategoryBox");
+                var mode = C<ComboBox>("ModeBox");
+                if (name == "CategoryBox")
+                {
+                    if (category.SelectedItem is SearchKind.Literal)
+                        mode.SelectedItem = QueryMode.Literal;
+                    else if (mode.SelectedItem is QueryMode.Literal)
+                        mode.SelectedItem = QueryMode.Text;
+                }
+                else if (name == "ModeBox")
+                {
+                    if (mode.SelectedItem is QueryMode.Literal)
+                        category.SelectedItem = SearchKind.Literal;
+                    else if (category.SelectedItem is SearchKind.Literal)
+                        category.SelectedItem = SearchKind.Any;
+                }
+                await SearchAsync();
+            };
         foreach (var name in new[] { "CaseBox", "ExactBox", "AnyBox", "GeneratedBox", "FrameworkBox", "AttributesBox", "ResourcesBox" })
             C<CheckBox>(name).IsCheckedChanged += async (_, _) => { if (ready) await SearchAsync(); };
         C<NumericUpDown>("LimitBox").ValueChanged += async (_, _) => { if (ready) await SearchAsync(); };

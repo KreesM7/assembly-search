@@ -11,6 +11,42 @@ public class MainWindowTests
 {
     public static AssemblySearch.Desktop.MainWindow Window() => new(Path.Combine(Path.GetTempPath(), "assembly-search-test-" + Guid.NewGuid(), "settings.json"));
     [AvaloniaFact]
+    public async Task SwitchingAwayFromLiteralRestoresDisplayedCategory()
+    {
+        var w = Window();
+        w.Show();
+        w.LoadPaths([Path.Combine(AppContext.BaseDirectory, "SearchFixture.dll")]);
+        var kind = w.FindControl<ComboBox>("CategoryBox")!;
+        var mode = w.FindControl<ComboBox>("ModeBox")!;
+        kind.SelectedItem = AssemblySearch.Core.Query.SearchKind.Literal;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(AssemblySearch.Core.Query.QueryMode.Literal, mode.SelectedItem);
+        kind.SelectedItem = AssemblySearch.Core.Query.SearchKind.MethodDef;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(AssemblySearch.Core.Query.QueryMode.Text, mode.SelectedItem);
+        w.FindControl<TextBox>("QueryBox")!.Text = "Read";
+        await w.SearchAsync(true);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(3, w.Model.Results.Count);
+        w.Close();
+    }
+    [AvaloniaFact]
+    public void ExplicitLiteralModeMakesCategoryTruthful()
+    {
+        var w = Window();
+        w.Show();
+        var kind = w.FindControl<ComboBox>("CategoryBox")!;
+        var mode = w.FindControl<ComboBox>("ModeBox")!;
+        kind.SelectedItem = AssemblySearch.Core.Query.SearchKind.MethodDef;
+        mode.SelectedItem = AssemblySearch.Core.Query.QueryMode.Literal;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(AssemblySearch.Core.Query.SearchKind.Literal, kind.SelectedItem);
+        mode.SelectedItem = AssemblySearch.Core.Query.QueryMode.Regex;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(AssemblySearch.Core.Query.SearchKind.Any, kind.SelectedItem);
+        w.Close();
+    }
+    [AvaloniaFact]
     public void LoadedAssembliesShowBasenames()
     {
         var w = Window();

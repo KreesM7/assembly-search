@@ -35,7 +35,7 @@ Implemented on Linux x86_64. The Release build has no warnings/errors. Test comm
 | Q05 | See the corresponding specification requirement. | verified | `QueryCompilerTests`, `LiteralMatcherTests`; Q07 uses `CategoryTests.GeneratedMembersAreOptIn` and `BoundaryAuditTests.FrameworkPolicyExcludesCoreLibraryButKeepsUnsignedSystemName`. Reference-policy differences remain explicit. |
 | Q06 | See the corresponding specification requirement. | verified | `QueryCompilerTests`, `LiteralMatcherTests`; Q07 uses `CategoryTests.GeneratedMembersAreOptIn` and `BoundaryAuditTests.FrameworkPolicyExcludesCoreLibraryButKeepsUnsignedSystemName`. Reference-policy differences remain explicit. |
 | Q07 | See the corresponding specification requirement. | verified | `QueryCompilerTests`, `LiteralMatcherTests`; Q07 uses `CategoryTests.GeneratedMembersAreOptIn` and `BoundaryAuditTests.FrameworkPolicyExcludesCoreLibraryButKeepsUnsignedSystemName`. Reference-policy differences remain explicit. |
-| S01 | See the corresponding specification requirement. | verified | CategoryTests.RejectsBadInputs; BoundaryAuditTests.OversizedSparseFileIsRejectedBeforeReading; ScopeTests.SymlinksDeduplicate. |
+| S01 | See the corresponding specification requirement. | verified | CategoryTests.RejectsBadInputs; BoundaryAuditTests.OversizedSparseFileIsRejectedBeforeReading; ScopeTests.SymlinksDeduplicate; ReviewRegressionTests cover symlinked parents and symlink/.. resolution. |
 | S02 | See the corresponding specification requirement. | verified | ScopeTests; SearchServiceTests.SelectedTypeExcludesOtherTypes. |
 | S03 | See the corresponding specification requirement. | verified | CategoryTests; CLI JSON tests; original-build token smoke below. |
 | S04 | See the corresponding specification requirement. | partial | ContextReaderTests; MainWindowTests.LoadSearchAndSelectShowsContext; OS clipboard/file picker/export dialogs not independently exercised. |
@@ -50,7 +50,7 @@ Implemented on Linux x86_64. The Release build has no warnings/errors. Test comm
 | V05 | Known-query smoke tests on supplied dnSpy build | verified | Supplied dnSpy.dll, query StartSearch, MethodDef: seven matches; SearchControlVM.StartSearch token 0x06001258, SHA/MVID matched retained evidence. |
 | V06 | Actual Linux desktop launch and interaction | partial | Native desktop launched with dnSpy.dll and remained running. Headless controls/search/selection/keyboard/rendering verified; native OS interactions unavailable through this session’s computer surface. |
 | V07 | Linux CI and self-contained linux-x64 publish smoke test | verified | Release build, locked restore, self-contained linux-x64 package and package-smoke.sh pass locally. GitHub CI execution pending repository delivery. |
-| V08 | Final requirement review and Git remote SHA verification | pending | Final independent review and remote publication are the remaining delivery steps. |
+| V08 | Final requirement review and Git remote SHA verification | partial | Independent review complete; all three reported defects fixed with failing/passing regression tests. Remote commit/tree verification is recorded in the delivery receipt; connector-created commit SHAs differ from local author/date objects. |
 
 ## Known compatibility boundaries
 
@@ -69,3 +69,7 @@ Implemented on Linux x86_64. The Release build has no warnings/errors. Test comm
 - Strict frontend static audit: zero findings. This is not a native accessibility audit.
 - Known query on the supplied dnSpy.dll: Complete, seven results, approximately 2.2 seconds; required StartSearch token verified.
 - Desktop preview is a headless rendered screenshot, not a screenshot proving native OS interaction.
+
+## Final review results
+
+A fresh independent reviewer inspected the full implementation and independently passed the original 133 Release tests. The single fix pass added seven regression cases: canonical parent-directory aliases and symlink/.. semantics, three exponent overflows, and both directions of literal mode/category transitions. All **140 Release tests pass** (90 Core, 34 CLI, 16 Desktop); the Release build has zero warnings/errors. Explicit Infinity and NaN support remains covered. See [execution notes](execution-notes.md) for review rulings and limits.
