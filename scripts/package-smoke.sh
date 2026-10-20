@@ -6,6 +6,9 @@ fixture=${2:-"$root/tests/Fixtures/SearchFixture/bin/Release/net10.0/SearchFixtu
 task_tmp=$(mktemp -d -t 'assembly search smoke.XXXXXX')
 trap 'rm -rf -- "$task_tmp"' EXIT
 tar -xzf "$archive" -C "$task_tmp"
+for file in README.md THIRD_PARTY_NOTICES.md docs/verification.md docs/execution-notes.md docs/evidence/findings.md; do
+    test -s "$task_tmp/$file" || { printf 'Missing package documentation: %s\n' "$file" >&2; exit 1; }
+done
 "$task_tmp/cli/assembly-search" --help > "$task_tmp/help.txt"
 grep -q -- '--scope' "$task_tmp/help.txt"
 "$task_tmp/cli/assembly-search" "$fixture" --query Read --kind MethodDef --json > "$task_tmp/results.json"

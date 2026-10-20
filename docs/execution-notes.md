@@ -35,3 +35,5 @@ Final: fixed directory aliases — ParentDirectoryAliasesScanAssemblyOnlyOnce an
 Final: fixed floating overflow — OverflowingFloatIsNotExplicitInfinity (three values) RED→GREEN, suite 140/140.
 Final: fixed literal control mismatch — SwitchingAwayFromLiteralRestoresDisplayedCategory and ExplicitLiteralModeMakesCategoryTruthful RED→GREEN, suite 140/140.
 Publication: private KreesM7/assembly-search/main contains all source/evidence, remote 938ec162bf09134ab514a6b12f1f16b60f04a3f4 corresponds to local 92f208e5b841be88f287c6d2435c0e222184ee67 with identical tree 4730fe0b0b457599f732726d5eb3d6b9c2ec6f7c. GitHub Linux workflow running; final outcome is recorded in the external delivery receipt after this documentation commit.
+
+Delivery packaging correction: the archive README links into docs/, so the complete documentation/evidence folder is now included. The archive smoke test first failed for missing docs/verification.md, then passed after copying docs/ into the package. Product code is unchanged.
