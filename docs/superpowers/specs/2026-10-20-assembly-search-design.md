@@ -2,7 +2,7 @@
 
 Date: 2026-10-20
 
-Status: written specification awaiting user review. The conversational direction is approved; product implementation and verification have not started.
+Status: approved by the user on 2026-10-20. Implementation planning is in progress; product implementation and verification have not started.
 
 ## Purpose and success criteria
 
