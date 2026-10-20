@@ -1,0 +1,33 @@
+name: Linux
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build-test-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          global-json-file: global.json
+      - name: Restore locked dependencies
+        run: dotnet restore --locked-mode
+      - name: Release build
+        run: dotnet build -c Release --no-restore
+      - name: Tests
+        run: dotnet test -c Release --no-build --logger 'trx;LogFilePrefix=linux'
+      - name: Publish Linux archive
+        run: scripts/publish-linux.sh
+      - name: Verify self-contained CLI
+        run: scripts/package-smoke.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: assembly-search-linux-x64
+          path: |
+            artifacts/assembly-search-linux-x64.tar.gz
+            artifacts/SHA256SUMS

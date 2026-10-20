@@ -2,7 +2,7 @@
 
 Date: 2026-10-20
 
-Status: approved by the user on 2026-10-20. Implementation planning is in progress; product implementation and verification have not started.
+Status: approved by the user on 2026-10-20. The user selected Native execution; implementation and verification are recorded in docs/verification.md.
 
 ## Purpose and success criteria
 
