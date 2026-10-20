@@ -1,1 +1,1 @@
-namespace OtherLibrary; public class ReferencedType {}
+namespace OtherLibrary; public class ReferencedType { }

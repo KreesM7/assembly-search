@@ -1,17 +1,123 @@
-using System.Diagnostics;using System.Text.Json;using Xunit;
+using System.Diagnostics;
+using System.Text.Json;
+using Xunit;
 namespace AssemblySearch.Cli.Tests;
-public class CliProcessTests {
- static string Root {get{var d=new DirectoryInfo(AppContext.BaseDirectory);while(d!=null&&!File.Exists(Path.Combine(d.FullName,"AssemblySearch.sln")))d=d.Parent;return d!.FullName;}}
- public static async Task<(int Exit,string Out,string Error)> Run(params string[] args){var config=AppContext.BaseDirectory.Contains("/Release/")?"Release":"Debug";var start=new ProcessStartInfo(Environment.ProcessPath??"dotnet"){RedirectStandardOutput=true,RedirectStandardError=true};start.FileName=Environment.GetEnvironmentVariable("DOTNET_HOST_PATH")??"dotnet";start.ArgumentList.Add(Path.Combine(Root,"src/AssemblySearch.Cli/bin",config,"net10.0/assembly-search.dll"));foreach(var arg in args)start.ArgumentList.Add(arg);using var process=Process.Start(start)!;var output=process.StandardOutput.ReadToEndAsync();var error=process.StandardError.ReadToEndAsync();await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20));return(process.ExitCode,await output,await error);}
- static string Fixture=>Path.Combine(AppContext.BaseDirectory,"SearchFixture.dll");
- [Theory][InlineData("AssemblyDef")][InlineData("ModuleDef")][InlineData("Namespace")][InlineData("TypeDef")][InlineData("FieldDef")][InlineData("MethodDef")][InlineData("PropertyDef")][InlineData("EventDef")][InlineData("ParamDef")][InlineData("Local")][InlineData("ParamLocal")][InlineData("AssemblyRef")][InlineData("ModuleRef")][InlineData("Resource")][InlineData("GenericTypeDef")][InlineData("NonGenericTypeDef")][InlineData("EnumTypeDef")][InlineData("InterfaceTypeDef")][InlineData("ClassTypeDef")][InlineData("StructTypeDef")][InlineData("DelegateTypeDef")][InlineData("Member")][InlineData("Any")][InlineData("Literal")]
- public async Task EveryKindRuns(string kind){var r=await Run(Fixture,"--query","NeverExists","--kind",kind,"--json");Assert.Equal(0,r.Exit);Assert.Equal(0,JsonDocument.Parse(r.Out).RootElement.GetProperty("results").GetArrayLength());}
- [Fact]public void TerminalEscapesAreVisible()=>Assert.Equal(@"name\u001B[31m\u000A",AssemblySearch.Cli.OutputFormatter.Safe("name\u001b[31m\n"));
- [Fact]public async Task KnownQueryOutputsJson(){var r=await Run(Fixture,"--query","Read","--kind","MethodDef","--json");Assert.Equal(0,r.Exit);using var d=JsonDocument.Parse(r.Out);Assert.Equal(1,d.RootElement.GetProperty("schemaVersion").GetInt32());Assert.Equal(3,d.RootElement.GetProperty("results").GetArrayLength());Assert.Equal("Complete",d.RootElement.GetProperty("summary").GetProperty("status").GetString());}
- [Theory][InlineData("--bad")][InlineData("--query","[")][InlineData("--limit","0")][InlineData("--kind","Bogus")]
- public async Task BadArgumentsHaveCodeTwo(params string[] args){var list=new[]{Fixture,"--mode","regex"}.Concat(args).ToArray();var r=await Run(list);Assert.Equal(2,r.Exit);Assert.NotEmpty(r.Error);}
- [Fact]public async Task MissingFilesAreIncomplete(){var r=await Run("/missing/file.dll","--query","Read","--json");Assert.Equal(3,r.Exit);using var d=JsonDocument.Parse(r.Out);Assert.NotEmpty(d.RootElement.GetProperty("diagnostics").EnumerateArray());}
- [Fact]public async Task HelpExplainsOptions(){var r=await Run("--help");Assert.Equal(0,r.Exit);Assert.Contains("--scope",r.Out);Assert.Contains("--exact",r.Out);}
- [Fact]public async Task SpacesInPathAreSafe(){var path=Path.Combine(Path.GetTempPath(),"assembly fixture "+Guid.NewGuid()+".dll");File.Copy(Fixture,path);try{var r=await Run(path,"--query","Read","--kind","MethodDef","--json");Assert.Equal(0,r.Exit);Assert.Equal(3,JsonDocument.Parse(r.Out).RootElement.GetProperty("results").GetArrayLength());}finally{File.Delete(path);}}
- [Fact]public async Task LiteralModeKeepsStringType(){var r=await Run(Fixture,"--query","body literal needle","--kind","Literal","--json");Assert.Equal(0,r.Exit);Assert.Single(JsonDocument.Parse(r.Out).RootElement.GetProperty("results").EnumerateArray());}
+
+public class CliProcessTests
+{
+    static string Root
+    {
+        get
+        {
+            var d = new DirectoryInfo(AppContext.BaseDirectory);
+            while (d != null && !File.Exists(Path.Combine(d.FullName, "AssemblySearch.sln")))
+                d = d.Parent;
+            return d!.FullName;
+        }
+    }
+    public static async Task<(int Exit, string Out, string Error)> Run(params string[] args)
+    {
+        var config = AppContext.BaseDirectory.Contains("/Release/") ? "Release" : "Debug";
+        var start = new ProcessStartInfo(Environment.ProcessPath ?? "dotnet") { RedirectStandardOutput = true, RedirectStandardError = true };
+        start.FileName = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH") ?? "dotnet";
+        start.ArgumentList.Add(Path.Combine(Root, "src/AssemblySearch.Cli/bin", config, "net10.0/assembly-search.dll"));
+        foreach (var arg in args)
+            start.ArgumentList.Add(arg);
+        using var process = Process.Start(start)!;
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20));
+        return (process.ExitCode, await output, await error);
+    }
+    static string Fixture => Path.Combine(AppContext.BaseDirectory, "SearchFixture.dll");
+    [Theory]
+    [InlineData("AssemblyDef")]
+    [InlineData("ModuleDef")]
+    [InlineData("Namespace")]
+    [InlineData("TypeDef")]
+    [InlineData("FieldDef")]
+    [InlineData("MethodDef")]
+    [InlineData("PropertyDef")]
+    [InlineData("EventDef")]
+    [InlineData("ParamDef")]
+    [InlineData("Local")]
+    [InlineData("ParamLocal")]
+    [InlineData("AssemblyRef")]
+    [InlineData("ModuleRef")]
+    [InlineData("Resource")]
+    [InlineData("GenericTypeDef")]
+    [InlineData("NonGenericTypeDef")]
+    [InlineData("EnumTypeDef")]
+    [InlineData("InterfaceTypeDef")]
+    [InlineData("ClassTypeDef")]
+    [InlineData("StructTypeDef")]
+    [InlineData("DelegateTypeDef")]
+    [InlineData("Member")]
+    [InlineData("Any")]
+    [InlineData("Literal")]
+    public async Task EveryKindRuns(string kind)
+    {
+        var r = await Run(Fixture, "--query", "NeverExists", "--kind", kind, "--json");
+        Assert.Equal(0, r.Exit);
+        Assert.Equal(0, JsonDocument.Parse(r.Out).RootElement.GetProperty("results").GetArrayLength());
+    }
+    [Fact] public void TerminalEscapesAreVisible() => Assert.Equal(@"name\u001B[31m\u000A", AssemblySearch.Cli.OutputFormatter.Safe("name\u001b[31m\n"));
+    [Fact]
+    public async Task KnownQueryOutputsJson()
+    {
+        var r = await Run(Fixture, "--query", "Read", "--kind", "MethodDef", "--json");
+        Assert.Equal(0, r.Exit);
+        using var d = JsonDocument.Parse(r.Out);
+        Assert.Equal(1, d.RootElement.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(3, d.RootElement.GetProperty("results").GetArrayLength());
+        Assert.Equal("Complete", d.RootElement.GetProperty("summary").GetProperty("status").GetString());
+    }
+    [Theory]
+    [InlineData("--bad")]
+    [InlineData("--query", "[")]
+    [InlineData("--limit", "0")]
+    [InlineData("--kind", "Bogus")]
+    public async Task BadArgumentsHaveCodeTwo(params string[] args)
+    {
+        var list = new[] { Fixture, "--mode", "regex" }.Concat(args).ToArray();
+        var r = await Run(list);
+        Assert.Equal(2, r.Exit);
+        Assert.NotEmpty(r.Error);
+    }
+    [Fact]
+    public async Task MissingFilesAreIncomplete()
+    {
+        var r = await Run("/missing/file.dll", "--query", "Read", "--json");
+        Assert.Equal(3, r.Exit);
+        using var d = JsonDocument.Parse(r.Out);
+        Assert.NotEmpty(d.RootElement.GetProperty("diagnostics").EnumerateArray());
+    }
+    [Fact]
+    public async Task HelpExplainsOptions()
+    {
+        var r = await Run("--help");
+        Assert.Equal(0, r.Exit);
+        Assert.Contains("--scope", r.Out);
+        Assert.Contains("--exact", r.Out);
+    }
+    [Fact]
+    public async Task SpacesInPathAreSafe()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "assembly fixture " + Guid.NewGuid() + ".dll");
+        File.Copy(Fixture, path);
+        try
+        {
+            var r = await Run(path, "--query", "Read", "--kind", "MethodDef", "--json");
+            Assert.Equal(0, r.Exit);
+            Assert.Equal(3, JsonDocument.Parse(r.Out).RootElement.GetProperty("results").GetArrayLength());
+        }
+        finally { File.Delete(path); }
+    }
+    [Fact]
+    public async Task LiteralModeKeepsStringType()
+    {
+        var r = await Run(Fixture, "--query", "body literal needle", "--kind", "Literal", "--json");
+        Assert.Equal(0, r.Exit);
+        Assert.Single(JsonDocument.Parse(r.Out).RootElement.GetProperty("results").EnumerateArray());
+    }
 }

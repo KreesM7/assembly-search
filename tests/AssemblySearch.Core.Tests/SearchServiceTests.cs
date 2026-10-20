@@ -1,13 +1,91 @@
-using AssemblySearch.Core.Search;using AssemblySearch.Core.Query;using AssemblySearch.Core.Metadata;using Xunit;
+using AssemblySearch.Core.Search;
+using AssemblySearch.Core.Query;
+using AssemblySearch.Core.Metadata;
+using Xunit;
 namespace AssemblySearch.Core.Tests;
-public class SearchServiceTests {
- public static async Task<(List<SearchResult> Rows,SearchSummary Summary)> Collect(SearchRequest request,CancellationToken token=default,IMetadataReader? reader=null){await using var s=new SearchService(reader).Start(request,token);var rows=new List<SearchResult>();await foreach(var batch in s.ReadBatchesAsync()){Assert.InRange(batch.Results.Count,1,100);rows.AddRange(batch.Results);}return(rows,await s.Completion);}
- [Fact]public async Task EmptyQueryDoesNotReadInputs(){var (rows,s)=await Collect(new(new("  "),["/missing"]));Assert.Empty(rows);Assert.Equal(SearchStatus.Complete,s.Status);Assert.Equal(0,s.ScannedFiles);Assert.Equal(0,s.SkippedFiles);}
- [Fact]public async Task RealSearchFindsMethods(){var (rows,summary)=await Collect(new(new("Read",SearchKind.MethodDef),[CategoryTests.Fixture]));Assert.Equal(3,rows.Count);Assert.Equal(SearchStatus.Complete,summary.Status);Assert.All(rows,r=>Assert.NotNull(r.Candidate.Token));}
- [Fact]public async Task FailuresArePartial(){var (_,summary)=await Collect(new(new("Read",SearchKind.MethodDef),[CategoryTests.Fixture+".missing",CategoryTests.Fixture]));Assert.Equal(SearchStatus.Incomplete,summary.Status);Assert.Equal(1,summary.SkippedFiles);Assert.Equal(1,summary.ScannedFiles);}
- [Fact]public async Task PreCancellationIsVisible(){using var c=new CancellationTokenSource();c.Cancel();var (rows,s)=await Collect(new(new("Read",SearchKind.MethodDef),[CategoryTests.Fixture]),c.Token);Assert.Empty(rows);Assert.Equal(SearchStatus.Cancelled,s.Status);}
- [Theory][InlineData(1)][InlineData(101)][InlineData(10000)]public async Task ResultLimitIsExactUnderConcurrency(int cap){var (rows,s)=await Collect(new(new("needle",Limit:cap),Enumerable.Range(0,8).Select(x=>"/fixture"+x).ToArray()),reader:new ManyReader());Assert.Equal(cap,rows.Count);Assert.Equal(cap,s.ResultCount);Assert.Equal(SearchStatus.Incomplete,s.Status);Assert.Equal(cap,rows.Select(r=>r.Id).Distinct().Count());}
- [Fact]public async Task AbandonedConsumerDisposes(){var s=new SearchService(new ManyReader()).Start(new(new("needle",Limit:100000),["/a"]));await Task.Delay(30);await s.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(3));}
- [Fact]public async Task SelectedTypeExcludesOtherTypes(){var (rows,s)=await Collect(new(new("Read",SearchKind.MethodDef,Scope:SearchScopeKind.Type,SelectedType:"Sample.Widget"),[CategoryTests.Fixture]));Assert.Equal(2,rows.Count);Assert.Equal(SearchStatus.Complete,s.Status);}
- sealed class ManyReader:IMetadataReader {public IEnumerable<SearchCandidate> Read(string path,SearchQuery q,Action<SearchDiagnostic> report,CancellationToken ct){for(int n=0;n<20000;n++){ct.ThrowIfCancellationRequested();yield return new(new(path,"hash",Guid.Empty),SearchKind.MethodDef,n.ToString(),"needle",null,null,(uint)n,null,"needle",null,false,false,"");}}}
+
+public class SearchServiceTests
+{
+    public static async Task<(List<SearchResult> Rows, SearchSummary Summary)> Collect(SearchRequest request, CancellationToken token = default, IMetadataReader? reader = null)
+    {
+        await using var s = new SearchService(reader).Start(request, token);
+        var rows = new List<SearchResult>();
+        await foreach (var batch in s.ReadBatchesAsync())
+        {
+            Assert.InRange(batch.Results.Count, 1, 100);
+            rows.AddRange(batch.Results);
+        }
+        return (rows, await s.Completion);
+    }
+    [Fact]
+    public async Task EmptyQueryDoesNotReadInputs()
+    {
+        var (rows, s) = await Collect(new(new("  "), ["/missing"]));
+        Assert.Empty(rows);
+        Assert.Equal(SearchStatus.Complete, s.Status);
+        Assert.Equal(0, s.ScannedFiles);
+        Assert.Equal(0, s.SkippedFiles);
+    }
+    [Fact]
+    public async Task RealSearchFindsMethods()
+    {
+        var (rows, summary) = await Collect(new(new("Read", SearchKind.MethodDef), [CategoryTests.Fixture]));
+        Assert.Equal(3, rows.Count);
+        Assert.Equal(SearchStatus.Complete, summary.Status);
+        Assert.All(rows, r => Assert.NotNull(r.Candidate.Token));
+    }
+    [Fact]
+    public async Task FailuresArePartial()
+    {
+        var (_, summary) = await Collect(new(new("Read", SearchKind.MethodDef), [CategoryTests.Fixture + ".missing", CategoryTests.Fixture]));
+        Assert.Equal(SearchStatus.Incomplete, summary.Status);
+        Assert.Equal(1, summary.SkippedFiles);
+        Assert.Equal(1, summary.ScannedFiles);
+    }
+    [Fact]
+    public async Task PreCancellationIsVisible()
+    {
+        using var c = new CancellationTokenSource();
+        c.Cancel();
+        var (rows, s) = await Collect(new(new("Read", SearchKind.MethodDef), [CategoryTests.Fixture]), c.Token);
+        Assert.Empty(rows);
+        Assert.Equal(SearchStatus.Cancelled, s.Status);
+    }
+    [Theory]
+    [InlineData(1)]
+    [InlineData(101)]
+    [InlineData(10000)]
+    public async Task ResultLimitIsExactUnderConcurrency(int cap)
+    {
+        var (rows, s) = await Collect(new(new("needle", Limit: cap), Enumerable.Range(0, 8).Select(x => "/fixture" + x).ToArray()), reader: new ManyReader());
+        Assert.Equal(cap, rows.Count);
+        Assert.Equal(cap, s.ResultCount);
+        Assert.Equal(SearchStatus.Incomplete, s.Status);
+        Assert.Equal(cap, rows.Select(r => r.Id).Distinct().Count());
+    }
+    [Fact]
+    public async Task AbandonedConsumerDisposes()
+    {
+        var s = new SearchService(new ManyReader()).Start(new(new("needle", Limit: 100000), ["/a"]));
+        await Task.Delay(30);
+        await s.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(3));
+    }
+    [Fact]
+    public async Task SelectedTypeExcludesOtherTypes()
+    {
+        var (rows, s) = await Collect(new(new("Read", SearchKind.MethodDef, Scope: SearchScopeKind.Type, SelectedType: "Sample.Widget"), [CategoryTests.Fixture]));
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(SearchStatus.Complete, s.Status);
+    }
+    sealed class ManyReader : IMetadataReader
+    {
+        public IEnumerable<SearchCandidate> Read(string path, SearchQuery q, Action<SearchDiagnostic> report, CancellationToken ct)
+        {
+            for (int n = 0; n < 20000; n++)
+            {
+                ct.ThrowIfCancellationRequested();
+                yield return new(new(path, "hash", Guid.Empty), SearchKind.MethodDef, n.ToString(), "needle", null, null, (uint)n, null, "needle", null, false, false, "");
+            }
+        }
+    }
 }
