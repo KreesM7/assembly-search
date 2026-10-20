@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;using System.Runtime.CompilerServices;
 namespace Sample;
+[Obsolete("attribute needle")]
 public class Widget : OtherLibrary.ReferencedType {
  static Widget(){var marker=Environment.GetEnvironmentVariable("ASSEMBLY_SEARCH_FIXTURE_MARKER");if(marker!=null)File.WriteAllText(marker,"EXECUTED");}
  public const string Greeting="hello searchable world";public const ulong Huge=ulong.MaxValue;public int Counter;public string Title{get;set;}="";public event Action? Changed;

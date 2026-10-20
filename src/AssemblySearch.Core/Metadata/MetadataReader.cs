@@ -16,7 +16,7 @@ public sealed partial class MetadataReader:IMetadataReader {
   TryLoadSymbols(module,path,query,report);
   var identity=new AssemblyIdentity(path,Convert.ToHexStringLower(SHA256.HashData(bytes)),module.Mvid??Guid.Empty);
   if(!query.IncludeFramework&&IsFramework(module))yield break;
-  foreach(var c in Enumerate(module,identity,query,report,token)){
+  foreach(var c in WithAttributes(module,identity,query,report,token)){
    token.ThrowIfCancellationRequested();
    var requested=query.Mode==QueryMode.Literal?SearchKind.Literal:query.Kind;
    if(!CategoryFilter.Includes(requested,c))continue;
@@ -46,6 +46,8 @@ public sealed partial class MetadataReader:IMetadataReader {
   yield return C(SearchKind.ModuleDef,module.Name,module.MDToken.Raw);
   foreach(var a in module.GetAssemblyRefs())yield return C(SearchKind.AssemblyRef,a.FullName,a.MDToken.Raw);
   foreach(var a in module.GetModuleRefs())yield return C(SearchKind.ModuleRef,a.Name,a.MDToken.Raw);
+  if(q.Kind is SearchKind.Any or SearchKind.Resource or SearchKind.Literal||q.Mode==QueryMode.Literal)
+   foreach(var resource in module.Resources){ct.ThrowIfCancellationRequested();if(resource is EmbeddedResource embedded){foreach(var c in ResourceReader.Enumerate(embedded,id,q,report,ct))yield return c;}else report(new("resource-unsupported","Linked resources are not followed: "+resource.Name,id.Path));}
   var types=module.GetTypes().Where(t=>!t.IsGlobalModuleType).ToArray();
   foreach(var ns in types.Select(t=>t.Namespace.String).Distinct(StringComparer.Ordinal))yield return C(SearchKind.Namespace,ns,null,coordinate:"namespace:"+ns);
   foreach(var t in types){
@@ -69,6 +71,10 @@ public sealed partial class MetadataReader:IMetadataReader {
      if(p.HasConstant)yield return pc with{Kind=SearchKind.Literal,IsLiteral=true,LiteralValue=p.Constant.Value,DisplayName=$"{p.Name} = {p.Constant.Value}",Coordinate=pc.Coordinate+":constant"};
     }
     if(!m.HasBody)continue;
+    if(q.Kind is SearchKind.Local or SearchKind.ParamLocal or SearchKind.Any){
+     var names=SymbolReader.ReadLocals(m,id,report);
+     foreach(var local in m.Body.Variables){string name=names.TryGetValue(local.Index,out var debugName)?debugName:"V_"+local.Index;yield return C(SearchKind.Local,name,m.MDToken.Raw,type,m.FullName,generated:g,coordinate:$"{m.MDToken.Raw:X8}:local:{local.Index}",context:context+"\nLocal: "+name+(names.ContainsKey(local.Index)?"":" [synthetic IL identity]"));}
+    }
     foreach(var i in m.Body.Instructions){
      ct.ThrowIfCancellationRequested();object? value=null;bool literal=true;
      if(i.IsLdcI4())value=i.GetLdcI4Value();else if(i.OpCode.Code is Code.Ldc_I8 or Code.Ldc_R4 or Code.Ldc_R8 or Code.Ldstr)value=i.Operand;else literal=false;
@@ -77,5 +83,18 @@ public sealed partial class MetadataReader:IMetadataReader {
    }
   }
  }
- static void TryLoadSymbols(ModuleDefMD module,string path,SearchQuery query,Action<SearchDiagnostic> report){}
+ IEnumerable<SearchCandidate> WithAttributes(ModuleDefMD module,AssemblyIdentity id,SearchQuery q,Action<SearchDiagnostic> report,CancellationToken token){
+  foreach(var c in Enumerate(module,id,q,report,token)){
+   yield return c;
+   if(!q.IncludeAttributes||c.IsLiteral||c.Token==null||c.Kind is >SearchKind.Resource or SearchKind.Local or SearchKind.Resource or SearchKind.Namespace)continue;
+   var owner=c.Kind==SearchKind.AssemblyDef?module.Assembly:module.ResolveToken(c.Token.Value) as IHasCustomAttribute;
+   if(owner!=null)foreach(var a in AttributeReader.Enumerate(owner,c,report))yield return a;
+  }
+ }
+ static void TryLoadSymbols(ModuleDefMD module,string path,SearchQuery query,Action<SearchDiagnostic> report){
+  if(query.Kind is not (SearchKind.Local or SearchKind.ParamLocal or SearchKind.Any))return;
+  var pdb=Path.ChangeExtension(path,".pdb");
+  if(!File.Exists(pdb)){report(new("symbols-missing","No adjacent PDB; local names use synthetic IL identities.",path));return;}
+  try{module.LoadPdb(pdb);}catch(Exception e)when(e is IOException or ArgumentException or BadImageFormatException){report(new("symbols-invalid",e.Message,path));}
+ }
 }
