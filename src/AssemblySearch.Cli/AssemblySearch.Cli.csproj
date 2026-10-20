@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><AssemblyName>assembly-search</AssemblyName></PropertyGroup><ItemGroup><ProjectReference Include="../AssemblySearch.Core/AssemblySearch.Core.csproj"/></ItemGroup></Project>
